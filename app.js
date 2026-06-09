@@ -46,8 +46,16 @@ uploadZone.addEventListener('drop', e => {
 });
 fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 
+// ツール自身のファイル名（GitHub Pagesで公開した場合に誤って読み込まれないようガード）
+const TOOL_OWN_FILES = new Set(['index.html', 'app.js', 'style.css']);
+
 function handleFiles(files) {
   Array.from(files).forEach(file => {
+    // ツール自身のファイルをアップロードしてしまった場合は無視
+    if (TOOL_OWN_FILES.has(file.name)) {
+      showToast(`"${file.name}" はツール自身のファイルです。編集したいプロジェクトのファイルをアップロードしてください。`, 'error');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
       state.files[file.name] = { content: e.target.result, type: file.type, name: file.name };
@@ -384,29 +392,42 @@ function buildInjectedHtml() {
   if (!state.activeHtmlFile) return null;
   let html = state.files[state.activeHtmlFile].content;
 
-  // Inline linked CSS files
+  // Ensure <head></head> exists
+  if (!/<head[\s>]/i.test(html)) html = '<head></head>' + html;
+  if (!/<\/head>/i.test(html))   html = html.replace(/<head[^>]*>/i, m => m + '</head>');
+
+  // Inline each uploaded CSS file (replace <link> if present, else inject into <head>)
   Object.entries(state.files).forEach(([name, { content }]) => {
     if (!/\.css$/i.test(name)) return;
-    const re = new RegExp(`<link[^>]*href=["']${escapeRe(name)}["'][^>]*>`, 'i');
-    html = re.test(html)
-      ? html.replace(re, `<style>/* ${name} */\n${content}\n</style>`)
-      : html.replace('</head>', `<style>/* ${name} */\n${content}\n</style>\n</head>`);
+    const linkRe = new RegExp('<link[^>]*href=["\'](?:\\./)?'+ escapeRe(name) +'["\'][^>]*>', 'gi');
+    if (linkRe.test(html)) {
+      html = html.replace(linkRe, '<style>/* '+ name +' */\n'+ content +'\n</style>');
+    } else {
+      html = html.replace(/<\/head>/i, '<style>/* '+ name +' */\n'+ content +'\n</style>\n</head>');
+    }
   });
 
-  // Inline linked JS files
+  // Inline each uploaded JS file (replace <script src> if present, else inject before </body>)
   Object.entries(state.files).forEach(([name, { content }]) => {
     if (!/\.(js|jsx|ts|tsx)$/i.test(name)) return;
-    const re = new RegExp(`<script[^>]*src=["']${escapeRe(name)}["'][^>]*><\/script>`, 'i');
-    if (re.test(html)) html = html.replace(re, `<script>/* ${name} */\n${content}\n<\/script>`);
+    const scriptRe = new RegExp('<script[^>]*src=["\'](?:\\./)?'+ escapeRe(name) +'["\'][^>]*>\\s*<\\/script>', 'gi');
+    const inlined  = '<script>/* '+ name +' */\n'+ content +'\n<\/script>';
+    if (scriptRe.test(html)) {
+      html = html.replace(scriptRe, inlined);
+    } else {
+      html = /<\/body>/i.test(html)
+        ? html.replace(/<\/body>/i, inlined + '\n</body>')
+        : html + inlined;
+    }
   });
 
-  // Inject variable overrides
+  // Inject CSS variable overrides
   const overrides = Object.entries(state.vars)
     .filter(([k, v]) => v !== state.originalVars[k])
-    .map(([k, v]) => `  ${k}: ${v};`)
+    .map(([k, v]) => '  '+ k +': '+ v +';')
     .join('\n');
   if (overrides) {
-    html = html.replace('</head>', `<style id="__tweakstudio__">:root {\n${overrides}\n}</style>\n</head>`);
+    html = html.replace(/<\/head>/i, '<style id="__tweakstudio__">:root {\n'+ overrides +'\n}</style>\n</head>');
   }
 
   return html;
