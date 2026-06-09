@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Tweak Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    UI Tweak Studio
+  </div>
+  <div class="file-status" id="fileStatus">ファイル未読み込み</div>
+  <div class="header-actions">
+    <div class="history-strip">
+      <button class="btn-outline btn-sm hist-btn" id="undoBtn" title="元に戻す (Cmd+Z)" disabled>↩</button>
+      <button class="btn-outline btn-sm hist-btn" id="redoBtn" title="やり直す (Cmd+Y)" disabled>↪</button>
+    </div>
+    <button class="btn-outline btn-sm" id="resetBtn" disabled>リセット</button>
+    <button class="btn-success btn-sm" id="downloadBtn" disabled>⬇ ダウンロード</button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- Left Panel -->
+  <div class="panel">
+    <div class="panel-tabs">
+      <div class="panel-tab active" data-tab="upload">ファイル</div>
+      <div class="panel-tab" data-tab="vars">変数</div>
+      <div class="panel-tab" data-tab="code">コード</div>
+    </div>
+
+    <!-- Tab: Upload -->
+    <div class="panel-body" id="tabUpload">
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">⬆</div>
+        <p><strong>クリック</strong>またはドラッグ&ドロップ</p>
+        <p style="margin-top:4px; font-size:11px;">HTML / CSS / JS ファイル対応</p>
+        <input type="file" id="fileInput" style="display:none" multiple
+          accept=".html,.htm,.css,.js,.jsx,.ts,.tsx,.vue,.svelte">
+      </div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <!-- Tab: Variables -->
+    <div class="panel-body" id="tabVars" style="display:none">
+      <div class="change-summary" id="changeSummary">
+        <strong id="changeCount">0</strong>件の変更 —
+        <button class="reset-btn" id="resetAllVarsBtn">すべてリセット</button>
+      </div>
+      <div id="varGroups">
+        <div class="no-vars">ファイルを読み込むとCSS変数が表示されます</div>
+      </div>
+    </div>
+
+    <!-- Tab: Code -->
+    <div class="panel-body code-view" id="tabCode" style="display:none">
+      <div class="code-view-header">
+        <span class="code-label">変更済みコード</span>
+        <button class="btn-outline btn-sm" id="copyCodeBtn">コピー</button>
+      </div>
+      <div class="code-box" id="codeBox">ファイルを読み込んでください</div>
+    </div>
+  </div>
+
+  <!-- Preview Area -->
+  <div class="preview-area">
+    <div class="preview-toolbar">
+      <span class="preview-label">プレビュー</span>
+      <div class="width-presets">
+        <button class="preset-btn" data-width="390" data-height="844">📱 モバイル</button>
+        <button class="preset-btn" data-width="768" data-height="700">💻 タブレット</button>
+        <button class="preset-btn active" data-width="100%" data-height="100%">🖥 フル</button>
+      </div>
+      <button class="btn-outline btn-sm" id="refreshPreview" style="margin-left:auto">↺ 更新</button>
+    </div>
+    <div class="preview-frame-wrap" id="previewWrap">
+      <div class="empty-state">
+        <div class="empty-icon">🎨</div>
+        <h3>UI Tweak Studio</h3>
+        <p>HTMLファイルをアップロードするとここにプレビューが表示されます。<br>CSS変数を編集するとリアルタイムで反映されます。</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
